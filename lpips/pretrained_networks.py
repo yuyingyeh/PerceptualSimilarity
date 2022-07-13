@@ -133,7 +133,45 @@ class vgg16(torch.nn.Module):
 
         return out
 
+class vgg16_style(torch.nn.Module):
+    def __init__(self, requires_grad=False, pretrained=True):
+        super(vgg16_style, self).__init__()
+        vgg_pretrained_features = tv.vgg16(pretrained=pretrained).features
+        self.slice1 = torch.nn.Sequential()
+        self.slice2 = torch.nn.Sequential()
+        self.slice3 = torch.nn.Sequential()
+        self.slice4 = torch.nn.Sequential()
+        self.slice5 = torch.nn.Sequential()
+        self.N_slices = 5
+        for x in range(1): # conv1_1
+            self.slice1.add_module(str(x), vgg_pretrained_features[x])
+        for x in range(1, 6): # conv2_1
+            self.slice2.add_module(str(x), vgg_pretrained_features[x])
+        for x in range(6, 11): # conv3_1
+            self.slice3.add_module(str(x), vgg_pretrained_features[x])
+        for x in range(11, 18): # conv4_1
+            self.slice4.add_module(str(x), vgg_pretrained_features[x])
+        for x in range(18, 25): # conv5_1
+            self.slice5.add_module(str(x), vgg_pretrained_features[x])
+        if not requires_grad:
+            for param in self.parameters():
+                param.requires_grad = False
 
+    def forward(self, X):
+        h = self.slice1(X)
+        h_conv1_1 = h
+        h = self.slice2(h)
+        h_conv2_1 = h
+        h = self.slice3(h)
+        h_conv3_1 = h
+        h = self.slice4(h)
+        h_conv4_1 = h
+        h = self.slice5(h)
+        h_conv5_1 = h
+        vgg_outputs = namedtuple("VggOutputs", ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1'])
+        out = vgg_outputs(h_conv1_1, h_conv2_1, h_conv3_1, h_conv4_1, h_conv5_1)
+
+        return out
 
 class resnet(torch.nn.Module):
     def __init__(self, requires_grad=False, pretrained=True, num=18):
